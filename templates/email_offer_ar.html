@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:#0f213a;padding:28px 32px;text-align:center;">
+            <h1 style="color:#ffffff;margin:0;font-size:22px;">عرض وظيفي</h1>
+            <p style="color:#a8b8d0;margin:8px 0 0;font-size:13px;">شركة دابوق التجارية</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="font-size:16px;color:#1a1a2e;margin:0 0 16px;">السيد/ <strong>{{candidate_name}}</strong> المحترم،</p>
+            <p style="font-size:15px;color:#444;line-height:1.7;margin:0 0 20px;">
+              يسعدنا إبلاغكم بأنه تم إعداد عرض وظيفي لكم للانضمام إلى فريق شركة دابوق التجارية
+              بمسمى <strong>{{job_title}}</strong> براتب صافي <strong>{{net_salary}} ريال سعودي</strong>.
+            </p>
+            <p style="font-size:15px;color:#444;line-height:1.7;margin:0 0 24px;">
+              يرجى الاطلاع على تفاصيل العرض في المرفق (PDF)، والرد عبر الرابط أدناه خلال
+              <strong>{{validity_days}} أيام</strong> من تاريخ الإرسال.
+            </p>
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
+              <tr>
+                <td style="background:#0f213a;border-radius:8px;padding:14px 36px;">
+                  <a href="{{respond_url}}" style="color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">
+                    قبول / رفض العرض
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="font-size:13px;color:#888;line-height:1.6;margin:0;">
+              للاستفسار: {{company_phone}}<br>
+              إدارة الموارد البشرية — شركة دابوق التجارية
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8f9fb;padding:16px 32px;text-align:center;">
+            <p style="font-size:11px;color:#aaa;margin:0;">هذا البريد آلي — يرجى عدم الرد عليه مباشرة</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
