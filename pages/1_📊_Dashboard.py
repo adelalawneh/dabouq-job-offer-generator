@@ -4,8 +4,8 @@ from datetime import datetime
 
 from components.auth import logout_button, require_login
 from config import STATUS_LABELS
-from services.database import get_offer, get_stats, list_offers, offer_to_pdf_data
-from services.email import send_offer_email
+from services.database import delete_offer, get_stats, list_offers, offer_to_pdf_data
+from services.email import respond_url, send_offer_email
 from services.helpers import clean_filename, money
 from services.pdf import generate_pdf
 
@@ -86,12 +86,12 @@ for offer in offers:
         if offer["status"] == "rejected" and offer.get("rejection_reason"):
             st.warning(f"سبب الرفض: {offer['rejection_reason']}")
 
-        btn1, btn2, btn3 = st.columns(3)
-
         pdf_data = offer_to_pdf_data(offer)
         pdf_bytes = generate_pdf(pdf_data, offer.get("language", "العربية"))
         lang_suffix = "AR" if offer.get("language") == "العربية" else "EN"
         pdf_name = f"DABOUQ_JOB_OFFER_{clean_filename(offer['candidate_name'])}_{lang_suffix}.pdf"
+
+        btn1, btn2, btn3, btn4 = st.columns(4)
 
         with btn1:
             st.download_button(
@@ -116,5 +116,24 @@ for offer in offers:
 
         with btn3:
             if offer["status"] == "sent":
-                from services.email import respond_url
                 st.code(respond_url(offer["token"]), language=None)
+            else:
+                st.caption("—")
+
+        with btn4:
+            if offer["status"] == "draft":
+                confirm_key = f"confirm_delete_{offer['id']}"
+                if st.session_state.get(confirm_key):
+                    if st.button("✓ تأكيد الحذف", key=f"yes_{offer['id']}", type="primary", use_container_width=True):
+                        if delete_offer(offer["id"]):
+                            st.session_state.pop(confirm_key, None)
+                            st.toast("تم حذف المسودة.")
+                            st.rerun()
+                        else:
+                            st.error("تعذر الحذف.")
+                    if st.button("إلغاء", key=f"no_{offer['id']}", use_container_width=True):
+                        st.session_state.pop(confirm_key, None)
+                        st.rerun()
+                elif st.button("🗑️ حذف", key=f"del_{offer['id']}", use_container_width=True):
+                    st.session_state[confirm_key] = True
+                    st.rerun()
