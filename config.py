@@ -1,7 +1,6 @@
-from datetime import timedelta
-
 COMPANY = {
     "name_ar": "شركة دابوق التجارية شركة شخص واحد",
+    "name_ar_full": "شركة دابوق التجارية شركة شخص واحد",
     "name_en": "Dabouq Commercial Company One Person Co.",
     "establishment_no": "7013895862",
     "cr": "3550102093",
@@ -54,4 +53,20 @@ DEFAULT_CONTRACT = {
     "annual_leave": "٢١ يومًا في السنة",
 }
 
+DEFAULT_OFFER_FOOTER = {
+    "ar": {
+        "salary_review": "سيتم مراجعة الراتب بعد مرور ثلاثة (3) أشهر من تاريخ مباشرة العمل، وذلك لغرض النظر في إمكانية زيادة الراتب وتثبيت الموظف بناءً على تقييم الأداء.",
+        "validity": "ويُعتبر هذا العرض ساري المفعول لمدة عشرة (10) أيام فقط من تاريخ صدوره.",
+        "acceptance": "أوافق على ما ورد أعلاه، وأقر بأن تاريخ بدء عملي سيكون اعتبارًا من:      /      / ٢٠٢٦",
+        "rejection": "لا أوافق على العرض المذكور أعلاه للأسباب التالية: ........................................................",
+    },
+    "en": {
+        "salary_review": "Salary will be reviewed after three (3) months from the date of joining, for the purpose of considering a salary increase and confirmation based on performance evaluation.",
+        "validity": "This offer is valid for ten (10) days only from the date of issuance.",
+        "acceptance": "I agree to the terms above. My start date will be: ____ / ____ / 2026",
+        "rejection": "I do not agree to the above offer for the following reasons: ........................................................",
+    },
+}
+
+LOGO_PATH = "assets/logo_group.png"
 DB_PATH = "data/offers.db"

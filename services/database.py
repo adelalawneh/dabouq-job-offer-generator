@@ -11,53 +11,71 @@ OFFER_FIELDS = [
     "contract_type", "contract_duration", "work_days", "probation", "annual_leave",
     "total_salary", "insurance", "basic", "housing", "transport", "net_salary",
     "language", "created_by",
+    "footer_salary_review", "footer_validity", "footer_acceptance", "footer_rejection",
 ]
+
+FOOTER_DB_COLUMNS = [
+    "footer_salary_review TEXT",
+    "footer_validity TEXT",
+    "footer_acceptance TEXT",
+    "footer_rejection TEXT",
+]
+
+
+def _ensure_schema(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS offers (
+            id TEXT PRIMARY KEY,
+            token TEXT UNIQUE NOT NULL,
+            status TEXT NOT NULL DEFAULT 'draft',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            sent_at TEXT,
+            responded_at TEXT,
+            expires_at TEXT,
+            candidate_name TEXT NOT NULL,
+            candidate_email TEXT,
+            candidate_nationality TEXT,
+            document_number TEXT,
+            job_title TEXT,
+            department TEXT,
+            location TEXT,
+            contract_type TEXT,
+            contract_duration TEXT,
+            work_days TEXT,
+            probation TEXT,
+            annual_leave TEXT,
+            total_salary REAL,
+            insurance REAL,
+            basic REAL,
+            housing REAL,
+            transport REAL,
+            net_salary REAL,
+            language TEXT,
+            start_date TEXT,
+            rejection_reason TEXT,
+            created_by TEXT
+        )
+    """)
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(offers)")}
+    for column_def in FOOTER_DB_COLUMNS:
+        column_name = column_def.split()[0]
+        if column_name not in existing:
+            conn.execute(f"ALTER TABLE offers ADD COLUMN {column_def}")
+    conn.commit()
 
 
 def _connect():
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    _ensure_schema(conn)
     return conn
 
 
 def init_db():
-    with _connect() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS offers (
-                id TEXT PRIMARY KEY,
-                token TEXT UNIQUE NOT NULL,
-                status TEXT NOT NULL DEFAULT 'draft',
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                sent_at TEXT,
-                responded_at TEXT,
-                expires_at TEXT,
-                candidate_name TEXT NOT NULL,
-                candidate_email TEXT,
-                candidate_nationality TEXT,
-                document_number TEXT,
-                job_title TEXT,
-                department TEXT,
-                location TEXT,
-                contract_type TEXT,
-                contract_duration TEXT,
-                work_days TEXT,
-                probation TEXT,
-                annual_leave TEXT,
-                total_salary REAL,
-                insurance REAL,
-                basic REAL,
-                housing REAL,
-                transport REAL,
-                net_salary REAL,
-                language TEXT,
-                start_date TEXT,
-                rejection_reason TEXT,
-                created_by TEXT
-            )
-        """)
-        conn.commit()
+    with _connect():
+        pass
 
 
 def _now():
@@ -127,6 +145,16 @@ def respond_to_offer(offer_id, accepted, start_date=None, rejection_reason=None)
         conn.commit()
 
 
+def delete_offer(offer_id: str, *, drafts_only: bool = True) -> bool:
+    with _connect() as conn:
+        if drafts_only:
+            cur = conn.execute("DELETE FROM offers WHERE id = ? AND status = 'draft'", (offer_id,))
+        else:
+            cur = conn.execute("DELETE FROM offers WHERE id = ?", (offer_id,))
+        conn.commit()
+        return cur.rowcount > 0
+
+
 def get_offer(offer_id):
     with _connect() as conn:
         row = conn.execute("SELECT * FROM offers WHERE id = ?", (offer_id,)).fetchone()
@@ -181,7 +209,7 @@ def get_stats():
 
 
 def offer_to_pdf_data(offer):
-    from services.helpers import salary_ar_words, salary_en_words
+    from services.helpers import resolve_footer_fields, salary_ar_words, salary_en_words
     from datetime import datetime
 
     sent = offer.get("sent_at") or offer.get("created_at")
@@ -194,6 +222,7 @@ def offer_to_pdf_data(offer):
         date_en = datetime.today().strftime("%B %d, %Y")
 
     net = offer["net_salary"]
+    footer = resolve_footer_fields(offer)
     return {
         "name": offer["candidate_name"],
         "nationality": offer.get("candidate_nationality") or "",
@@ -216,4 +245,5 @@ def offer_to_pdf_data(offer):
         "salary_words_en": salary_en_words(net),
         "date": date_str,
         "date_en": date_en,
+        **footer,
     }

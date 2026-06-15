@@ -1,25 +1,30 @@
 import streamlit as st
-from datetime import datetime
 
-from components.auth import logout_button, require_login
+from components.auth import init_session, login_form, logout_button
 from config import DEFAULT_CONTRACT, JOB_TEMPLATES
-from services.database import create_offer, mark_sent, update_offer
+from services.database import create_offer, init_db, mark_sent, update_offer
 from services.email import send_hr_notification, send_offer_email
-from services.helpers import build_offer_payload, clean_filename, money, salary_split
+from services.helpers import build_offer_payload, clean_filename, footer_defaults as get_footer_defaults, money, salary_split
 from services.ocr import extract_document_data
 from services.pdf import generate_pdf
 
-require_login()
+init_session()
+
+if not st.session_state.logged_in:
+    login_form()
+    st.stop()
+
+init_db()
 logout_button()
 
 st.title("➕ عرض وظيفي جديد")
 st.caption("إنشاء وإرسال عرض وظيفي للمرشّح")
 
+if st.button("← العودة للعروض"):
+    st.switch_page("app.py")
+
 if "ocr_data" not in st.session_state:
     st.session_state.ocr_data = {"full_name": "", "nationality": "", "document_number": ""}
-
-if "edit_offer_id" not in st.session_state:
-    st.session_state.edit_offer_id = None
 
 template_names = ["— اختر قالب —"] + list(JOB_TEMPLATES.keys())
 selected_template = st.selectbox("📋 قالب وظيفة جاهز", template_names)
@@ -28,7 +33,13 @@ defaults = {}
 if selected_template != "— اختر قالب —":
     defaults = {**DEFAULT_CONTRACT, **JOB_TEMPLATES[selected_template]}
 else:
-    defaults = {**DEFAULT_CONTRACT, "job_title": "مندوب مبيعات", "department": "المبيعات", "location": "منطقة الرياض", "total_salary": 3500.0}
+    defaults = {
+        **DEFAULT_CONTRACT,
+        "job_title": "مندوب مبيعات",
+        "department": "المبيعات",
+        "location": "منطقة الرياض",
+        "total_salary": 3500.0,
+    }
 
 left, right = st.columns(2)
 
@@ -89,6 +100,29 @@ with right:
 
     language = st.radio("لغة العرض", ["العربية", "English"], horizontal=True)
 
+footer_defaults = get_footer_defaults(language)
+with st.expander("📝 نصوص نهاية العرض (قابلة للتعديل)", expanded=False):
+    footer_salary_review = st.text_area(
+        "ملاحظة مراجعة الراتب",
+        value=footer_defaults["salary_review"],
+        height=68,
+    )
+    footer_validity = st.text_area(
+        "صلاحية العرض",
+        value=footer_defaults["validity"],
+        height=56,
+    )
+    footer_acceptance = st.text_area(
+        "سطر الموافقة",
+        value=footer_defaults["acceptance"],
+        height=56,
+    )
+    footer_rejection = st.text_area(
+        "سطر الرفض",
+        value=footer_defaults["rejection"],
+        height=56,
+    )
+
 
 def collect_form():
     return {
@@ -108,6 +142,10 @@ def collect_form():
         "insurance": insurance,
         "language": language,
         "created_by": st.session_state.get("username", "hr"),
+        "footer_salary_review": footer_salary_review.strip(),
+        "footer_validity": footer_validity.strip(),
+        "footer_acceptance": footer_acceptance.strip(),
+        "footer_rejection": footer_rejection.strip(),
     }
 
 
@@ -124,6 +162,17 @@ def validate(required_email=False):
     return True
 
 
+def save_fields(form):
+    payload = build_offer_payload(form)
+    return {
+        **form,
+        "basic": payload["basic"],
+        "housing": payload["housing"],
+        "transport": payload["transport"],
+        "net_salary": payload["net_salary"],
+    }
+
+
 st.markdown("---")
 
 btn1, btn2, btn3 = st.columns(3)
@@ -131,10 +180,7 @@ btn1, btn2, btn3 = st.columns(3)
 with btn1:
     if st.button("💾 حفظ كمسودة", use_container_width=True):
         if validate():
-            form = collect_form()
-            payload = build_offer_payload(form)
-            db_fields = {**form, "basic": payload["basic"], "housing": payload["housing"], "transport": payload["transport"], "net_salary": payload["net_salary"]}
-            offer_id = create_offer(db_fields, status="draft")
+            offer_id = create_offer(save_fields(collect_form()), status="draft")
             st.success(f"تم حفظ المسودة — رقم: {offer_id[:8]}...")
 
 with btn2:
@@ -151,7 +197,7 @@ with btn3:
         if validate(required_email=True):
             form = collect_form()
             payload = build_offer_payload(form)
-            db_fields = {**form, "basic": payload["basic"], "housing": payload["housing"], "transport": payload["transport"], "net_salary": payload["net_salary"]}
+            db_fields = save_fields(form)
 
             offer_id = create_offer(db_fields, status="draft")
             pdf = generate_pdf(payload, language)
@@ -162,7 +208,7 @@ with btn3:
                 mark_sent(offer_id)
                 send_hr_notification(offer, "sent")
                 st.success("✅ تم إرسال العرض بنجاح!")
-                st.info("يمكنك متابعة حالة العرض من لوحة التحكم.")
+                st.info("يمكنك متابعة حالة العرض من صفحة العروض.")
             except Exception as e:
                 update_offer(offer_id, {}, status="draft")
                 st.error(f"فشل الإرسال: {e}")

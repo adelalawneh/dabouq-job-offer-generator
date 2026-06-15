@@ -4,6 +4,8 @@ from num2words import num2words
 from bidi.algorithm import get_display
 import arabic_reshaper
 
+from config import DEFAULT_OFFER_FOOTER
+
 
 def ar_text(text):
     reshaped = arabic_reshaper.reshape(str(text))
@@ -41,6 +43,22 @@ def salary_en_words(amount):
         return ""
 
 
+def footer_defaults(language: str) -> dict:
+    key = "ar" if language == "العربية" else "en"
+    return dict(DEFAULT_OFFER_FOOTER[key])
+
+
+def resolve_footer_fields(form_data: dict) -> dict:
+    language = form_data.get("language", "العربية")
+    defaults = footer_defaults(language)
+    return {
+        "footer_salary_review": (form_data.get("footer_salary_review") or defaults["salary_review"]).strip(),
+        "footer_validity": (form_data.get("footer_validity") or defaults["validity"]).strip(),
+        "footer_acceptance": (form_data.get("footer_acceptance") or defaults["acceptance"]).strip(),
+        "footer_rejection": (form_data.get("footer_rejection") or defaults["rejection"]).strip(),
+    }
+
+
 def extract_json(text):
     text = text.replace("```json", "").replace("```", "").strip()
     match = re.search(r"\{.*\}", text, re.DOTALL)
@@ -55,8 +73,10 @@ def build_offer_payload(form_data):
     from datetime import datetime
 
     today = datetime.today()
+    footer = resolve_footer_fields(form_data)
     return {
         **form_data,
+        **footer,
         "name": form_data.get("candidate_name") or form_data.get("name", ""),
         "doc_number": form_data.get("document_number") or form_data.get("doc_number", ""),
         "basic": basic,
