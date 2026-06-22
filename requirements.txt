@@ -1,5 +1,5 @@
 streamlit
-extra-streamlit-components
+extra-streamlit-components>=0.1.71
 google-generativeai
 Pillow
 reportlab

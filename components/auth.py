@@ -23,6 +23,17 @@ def _cookie_manager():
     return st.session_state.dabouq_hr_cookie_mgr
 
 
+def _read_cookies(manager) -> dict | None:
+    """Compatible with old and new extra-streamlit-components CookieManager APIs."""
+    cookies = getattr(manager, "cookies", None)
+    if isinstance(cookies, dict):
+        return cookies
+    getter = getattr(manager, "get_all", None)
+    if callable(getter):
+        return getter()
+    return None
+
+
 def init_session():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
@@ -172,7 +183,7 @@ def _try_restore_from_cookie():
         return
 
     manager = _cookie_manager()
-    cookies = manager.get_all()
+    cookies = _read_cookies(manager)
 
     if cookies is None:
         boots = int(st.session_state.get("_cookie_boot_count", 0))
@@ -180,6 +191,12 @@ def _try_restore_from_cookie():
             st.session_state._cookie_boot_count = boots + 1
             st.rerun()
         return
+
+    if not st.session_state.get("_remember_restore_done"):
+        boots = int(st.session_state.get("_cookie_boot_count", 0))
+        if not cookies.get(REMEMBER_COOKIE) and boots < COOKIE_BOOT_RETRIES:
+            st.session_state._cookie_boot_count = boots + 1
+            st.rerun()
 
     if "remember_me" not in st.session_state:
         st.session_state.remember_me = cookies.get(REMEMBER_PREF_COOKIE, "1") == "1"
