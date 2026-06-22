@@ -51,11 +51,17 @@ def footer_defaults(language: str) -> dict:
 def resolve_footer_fields(form_data: dict) -> dict:
     language = form_data.get("language", "العربية")
     defaults = footer_defaults(language)
+
+    def pick(field: str, default_key: str) -> str:
+        if field not in form_data or form_data[field] is None:
+            return defaults[default_key].strip()
+        return str(form_data[field]).strip()
+
     return {
-        "footer_salary_review": (form_data.get("footer_salary_review") or defaults["salary_review"]).strip(),
-        "footer_validity": (form_data.get("footer_validity") or defaults["validity"]).strip(),
-        "footer_acceptance": (form_data.get("footer_acceptance") or defaults["acceptance"]).strip(),
-        "footer_rejection": (form_data.get("footer_rejection") or defaults["rejection"]).strip(),
+        "footer_salary_review": pick("footer_salary_review", "salary_review"),
+        "footer_validity": pick("footer_validity", "validity"),
+        "footer_acceptance": pick("footer_acceptance", "acceptance"),
+        "footer_rejection": pick("footer_rejection", "rejection"),
     }
 
 

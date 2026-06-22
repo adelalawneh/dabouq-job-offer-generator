@@ -1,6 +1,7 @@
 import streamlit as st
 
 from components.auth import init_session, login_form, logout_button
+from components.ui import inject_css, render_sidebar
 from config import DEFAULT_CONTRACT, JOB_TEMPLATES
 from services.database import create_offer, init_db, mark_sent, update_offer
 from services.email import send_hr_notification, send_offer_email
@@ -11,10 +12,13 @@ from services.pdf import generate_pdf
 init_session()
 
 if not st.session_state.logged_in:
+    inject_css(hide_sidebar=True)
     login_form()
     st.stop()
 
 init_db()
+inject_css()
+render_sidebar()
 logout_button()
 
 st.title("➕ عرض وظيفي جديد")

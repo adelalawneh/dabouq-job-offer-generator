@@ -4,6 +4,7 @@ from datetime import datetime
 
 from components.auth import init_session, login_form, logout_button
 from components.candidate_response import render_candidate_response
+from components.ui import inject_css, render_sidebar
 from config import STATUS_LABELS
 from services.database import delete_offer, get_stats, init_db, list_offers, offer_to_pdf_data
 from services.email import respond_url, send_offer_email
@@ -27,9 +28,12 @@ if token:
 init_session()
 
 if not st.session_state.logged_in:
+    inject_css(hide_sidebar=True)
     login_form()
     st.stop()
 
+inject_css()
+render_sidebar()
 logout_button()
 
 st.title("📄 العروض الوظيفية")
